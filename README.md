@@ -44,7 +44,6 @@ Hubot clears the privilege table.
 
 ## TODO
 
-- Add group
 - Add privilege for specific action
 
 ## Contributing

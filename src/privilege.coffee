@@ -9,6 +9,7 @@
 #
 # Author:
 #   dtaniwaki
+# tweaked by scottcunningham to only listen to users in HUBOT_PRIVILEGE_ADMINS
 
 PRIVILEGE_TABLE_KEY = 'hub-privilege-table'
 
@@ -33,34 +34,42 @@ module.exports = (robot) ->
       receiveOrg.bind(robot)(msg)
 
   robot.respond /ignores?\s([^\s]*)(:?\sabout\s([^\s]*))?/i, (msg)->
-    who = msg.match[1].trim().toLowerCase()
-    action = msg.match[2]?.trim().toLowerCase()
-    if who == 'me'
-      who = msg.message.user?.name?.toLowerCase()
-    s = "I will ignore #{who}"
-    s += " about #{action}" if action?
-    msg.reply s
-    table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
-    table[who] = true
-    robot.brain.set PRIVILEGE_TABLE_KEY, table
+    if msg.message.user?.name?.toLowerCase() in process.env.HUBOT_PRIVILEGE_ADMINS.split()
+      who = msg.match[1].trim().toLowerCase()
+      action = msg.match[2]?.trim().toLowerCase()
+      if who == 'me'
+        who = msg.message.user?.name?.toLowerCase()
+      s = "I will ignore #{who}"
+      s += " about #{action}" if action?
+      msg.reply s
+      table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
+      table[who] = true
+      robot.brain.set PRIVILEGE_TABLE_KEY, table
+    else
+      msg.reply "You're not my supervisor!"
 
   robot.respond /forgives?\s([^\s]*)(:?\sabout\s([^\s]*))?/i, (msg)->
-    who = msg.match[1].trim().toLowerCase()
-    action = msg.match[2]?.trim().toLowerCase()
-    if who == 'me'
-      who = msg.message.user?.name?.toLowerCase()
-    s = "I will forgive #{who}"
-    s += " about #{action}" if action?
-    msg.reply s
-    table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
-    delete table[who]
-    robot.brain.set PRIVILEGE_TABLE_KEY, table
+    if msg.message.user?.name?.toLowerCase() in process.env.HUBOT_PRIVILEGE_ADMINS.split()
+      who = msg.match[1].trim().toLowerCase()
+      action = msg.match[2]?.trim().toLowerCase()
+      if who == 'me'
+        who = msg.message.user?.name?.toLowerCase()
+      s = "I will forgive #{who}"
+      s += " about #{action}" if action?
+      msg.reply s
+      table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
+      delete table[who]
+      robot.brain.set PRIVILEGE_TABLE_KEY, table
+    else
+      msg.reply "You're not my supervisor!"
 
   robot.respond /privilege(:?\s([^\s]*))?/i, (msg)->
-    action = msg.match[1]?.trim().toLowerCase()
-    if action == 'clear'
-      robot.brain.set PRIVILEGE_TABLE_KEY, {}
+    if msg.message.user?.name?.toLowerCase() in process.env.HUBOT_PRIVILEGE_ADMINS.split()
+      action = msg.match[1]?.trim().toLowerCase()
+      if action == 'clear'
+        robot.brain.set PRIVILEGE_TABLE_KEY, {}
+      else
+        table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
+        msg.send JSON.stringify(table)
     else
-      table = robot.brain.get(PRIVILEGE_TABLE_KEY) || {}
-      msg.send JSON.stringify(table)
-
+      msg.reply "You're not my supervisor!"
